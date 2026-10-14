@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Obstétrica - Control Prenatal IMC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Mochi+Pop+One&display=swap" rel="stylesheet">
+    
+    <!-- Librerías para Descarga de Informes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        guinda: {
+                            50: '#fdf2f4',
+                            100: '#fbe6e9',
+                            200: '#f7d0d8',
+                            300: '#f1abb8',
+                            400: '#e77a91',
+                            500: '#d74c6d',
+                            600: '#bf2b51',
+                            700: '#a01e3e',
+                            800: '#851c37',
+                            900: '#5a0f23',
+                            950: '#380614',
+                        },
+                        kawaiiPink: '#ffb7c5',
+                        kawaiiCream: '#fff8f9',
+                        kawaiiGold: '#ffd166',
+                        kawaiiMint: '#a8e6cf'
+                    },
+                    fontFamily: {
+                        sans: ['Quicksand', 'sans-serif'],
+                        cute: ['Fredoka', 'cursive'],
+                        mochi: ['Mochi Pop One', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fdf2f4;
+            background-image: 
+                radial-gradient(#e77a91 1.2px, transparent 1.2px), 
+                radial-gradient(#e77a91 1.2px, #fdf2f4 1.2px);
+            background-size: 32px 32px;
+            background-position: 0 0, 16px 16px;
+        }
+
+        /* TARJETAS ELEGANTES KAWAII CON OREJITAS */
+        .kawaii-card {
+            position: relative;
+            background-color: #ffffff;
+            border-radius: 28px;
+            border: 3px solid #f1abb8;
+            box-shadow: 0 10px 25px -5px rgba(133, 28, 55, 0.12), 0 8px 16px -6px rgba(133, 28, 55, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .kawaii-card:hover {
+            box-shadow: 0 14px 30px -5px rgba(133, 28, 55, 0.18), 0 10px 20px -6px rgba(133, 28, 55, 0.12);
+        }
+
+        /* Cabecera de tarjeta */
+        .kawaii-card-header {
+            background: linear-gradient(135deg, #851c37 0%, #5a0f23 100%);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 14px 22px;
+            color: #ffffff;
+        }
+
+        /* Orejas Kawaii flotantes bonitas */
+        .cat-ear-left, .cat-ear-right {
+            position: absolute;
+            top: -14px;
+            width: 28px;
+            height: 28px;
+            background-color: #ffffff;
+            border-top: 3px solid #851c37;
+            border-left: 3px solid #851c37;
+            border-radius: 8px 14px 0 0;
+            z-index: 10;
+        }
+        .cat-ear-left {
+            left: 24px;
+            transform: rotate(-15deg);
+        }
+        .cat-ear-right {
+            right: 24px;
+            transform: rotate(60deg) skewX(15deg);
+            border-left: none;
+            border-right: 3px solid #851c37;
+        }
+
+        /* Animaciones flotantes Kawaii */
+        @keyframes floatCute {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-7px) rotate(3deg); }
+        }
+        .animate-float {
+            animation: floatCute 3.5s ease-in-out infinite;
+        }
+
+        /* Animación suave para el marcador en la barra */
+        .gauge-marker {
+            transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Tarjeta de categoría en la barra */
+        .mini-category-card {
+            background: #ffffff;
+            border: 2px solid #f1abb8;
+            border-radius: 18px;
+            transition: all 0.25s ease;
+        }
+
+        /* Custom Slider Styling */
+        input[type=range].kawaii-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            background: #fbe6e9;
+            height: 8px;
+            border-radius: 6px;
+            outline: none;
+            border: 1px solid #f1abb8;
+        }
+        input[type=range].kawaii-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #bf2b51;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.15s ease;
+        }
+        input[type=range].kawaii-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #851c37;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <header class="bg-gradient-to-r from-guinda-950 via-guinda-800 to-guinda-900 text-white shadow-xl relative border-b-8 border-guinda-500 overflow-hidden">
+        <!-- Decoraciones flotantes de gatitos -->
+        <div class="absolute -top-1 left-8 text-3xl opacity-30 animate-float"><i class="fa-solid fa-cat"></i></div>
+        <div class="absolute top-4 right-12 text-4xl opacity-20 animate-float" style="animation-delay: 1s;"><i class="fa-solid fa-paw"></i></div>
+        <div class="absolute bottom-1 left-1/3 text-2xl opacity-20"><i class="fa-solid fa-baby"></i></div>
+
+        <div class="max-w-7xl mx-auto px-4 py-5 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center relative z-10 gap-4">
+            
+            <div class="flex items-center space-x-4">
+                <div class="relative bg-white p-2.5 rounded-3xl border-4 border-guinda-300 shadow-lg transform rotate-[-3deg]">
+                    <svg class="w-14 h-14 text-guinda-800" viewBox="0 0 100 100" fill="none">
+                        <polygon points="20,35 10,10 40,25" fill="#851c37"/>
+                        <polygon points="80,35 90,10 60,25" fill="#851c37"/>
+                        <polygon points="23,32 15,14 37,25" fill="#f1abb8"/>
+                        <polygon points="77,32 85,14 63,25" fill="#f1abb8"/>
+                        <circle cx="50" cy="50" r="35" fill="#ffffff" stroke="#851c37" stroke-width="4"/>
+                        <!-- Ojos Kawaii -->
+                        <ellipse cx="38" cy="45" rx="5" ry="7" fill="#380614"/>
+                        <ellipse cx="62" cy="45" rx="5" ry="7" fill="#380614"/>
+                        <circle cx="36" cy="42" r="2" fill="#ffffff"/>
+                        <circle cx="60" cy="42" r="2" fill="#ffffff"/>
+                        <!-- Mejillas sonrojadas -->
+                        <ellipse cx="30" cy="53" rx="4" ry="2.5" fill="#f1abb8"/>
+                        <ellipse cx="70" cy="53" rx="4" ry="2.5" fill="#f1abb8"/>
+                        <!-- Nariz y Boquita -->
+                        <polygon points="50,52 46,56 54,56" fill="#e77a91"/>
+                        <path d="M50,56 Q44,62 38,58 M50,56 Q56,62 62,58" stroke="#380614" stroke-width="2.5" stroke-linecap="round"/>
+                        <!-- Gorro Obstétrico -->
+                        <path d="M30,22 L70,22 L62,10 L38,10 Z" fill="#ffffff" stroke="#851c37" stroke-width="3"/>
+                        <path d="M50,12 L50,20 M45,16 L55,16" stroke="#bf2b51" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <span class="absolute -top-2 -right-2 bg-kawaiiGold text-guinda-950 font-mochi text-[10px] px-2 py-0.5 rounded-full border border-guinda-800 shadow">
+                        🐾 Nya!
+                    </span>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-mochi font-bold tracking-wider text-amber-100 flex items-center gap-2">
+                        Calculadora Obstétrica <i class="fa-solid fa-heart text-guinda-400 text-xl animate-pulse"></i>
+                    </h1>
+                    <p class="text-guinda-100 text-xs sm:text-sm font-cute font-medium flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Control Prenatal & Evaluación Nutricional IMC 🐾
+                    </p>
+                </div>
+            </div>
+
+            <!-- Botones de Descarga e Indicador Online -->
+            <div class="flex items-center gap-2 flex-wrap justify-center">
+                <span class="bg-guinda-950/80 text-emerald-300 font-cute text-xs px-3 py-1.5 rounded-full border border-emerald-400/50 flex items-center gap-1.5 shadow-inner">
+                    <i class="fa-solid fa-wifi text-emerald-400"></i> Sistema Online
+                </span>
+                <button onclick="downloadPDF()" class="bg-white hover:bg-guinda-50 text-guinda-900 font-cute font-bold px-4 py-2 rounded-2xl text-xs flex items-center gap-2 shadow-md hover:scale-105 transition border-2 border-guinda-300">
+                    <i class="fa-solid fa-file-pdf text-red-600 text-base"></i> Exportar PDF
+                </button>
+                <button onclick="downloadPNG()" class="bg-guinda-600 hover:bg-guinda-500 text-white font-cute font-bold px-4 py-2 rounded-2xl text-xs flex items-center gap-2 shadow-md hover:scale-105 transition border-2 border-guinda-400">
+                    <i class="fa-solid fa-image text-amber-300 text-base"></i> Guardar Imagen
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <main id="reportArea" class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex-grow w-full space-y-8">
+        
+        <!-- SECCIÓN PRINCIPAL: Formulario + Resultado -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch">
+            
+            <!-- FORMULARIO DE INGRESO CON SLIDERS (5 cols) -->
+            <div class="md:col-span-5 kawaii-card flex flex-col justify-between overflow-hidden">
+                <div class="cat-ear-left"></div>
+                <div class="cat-ear-right"></div>
+
+                <div class="kawaii-card-header flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-clipboard text-amber-300 text-lg"></i>
+                        <span class="font-mochi text-sm tracking-wide text-amber-100 uppercase">Datos de la Paciente</span>
+                    </div>
+                    <span class="bg-guinda-900/80 text-pink-200 text-[10px] font-bold px-2.5 py-1 rounded-full border border-pink-300/40">
+                        🌸 Ficha Prenatal
+                    </span>
+                </div>
+
+                <div class="p-6 space-y-5 flex-grow">
+                    <form id="imcForm" onsubmit="event.preventDefault();" class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-cute font-bold text-guinda-900 uppercase tracking-wider mb-1.5">
+                                Nombre de la Paciente
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-guinda-400 text-base">
+                                    <i class="fa-solid fa-hospital-user"></i>
+                                </span>
+                                <input type="text" id="patientName" placeholder="Ej. Ana María Pérez" value="Paciente Gestante"
+                                    class="w-full pl-11 pr-3 py-2.5 text-sm bg-guinda-50/60 border-2 border-guinda-200 rounded-2xl focus:ring-2 focus:ring-guinda-500 focus:border-guinda-600 outline-none transition font-medium text-slate-800"
+                                    oninput="calculateIMC()">
+                            </div>
+                        </div>
+
+                        <!-- PESO CON INPUT Y BARRA MOVIBLE -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-cute font-bold text-guinda-900 uppercase tracking-wider">
+                                    Peso (kg) <span class="text-red-500">*</span>
+                                </label>
+                                <span class="text-xs font-bold text-guinda-700 bg-guinda-100 px-2.5 py-0.5 rounded-full border border-guinda-200">
+                                    Ajuste rápido
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" id="weight" step="0.1" min="30" max="180" value="62.5" required
+                                    class="w-full pl-3.5 pr-9 py-2 text-base font-bold text-guinda-950 bg-white border-2 border-guinda-300 rounded-2xl focus:ring-2 focus:ring-guinda-500 focus:border-guinda-600 outline-none transition shadow-sm"
+                                    oninput="syncWeightFromInput()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-guinda-500">kg</span>
+                            </div>
+                            <input type="range" id="weightSlider" min="30" max="180" step="0.5" value="62.5" 
+                                class="kawaii-slider cursor-pointer" 
+                                oninput="syncWeightFromSlider()">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-semibold px-1">
+                                <span>30 kg</span>
+                                <span>105 kg</span>
+                                <span>180 kg</span>
+                            </div>
+                        </div>
+
+                        <!-- TALLA CON INPUT Y BARRA MOVIBLE -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-cute font-bold text-guinda-900 uppercase tracking-wider">
+                                    Talla (m) <span class="text-red-500">*</span>
+                                </label>
+                                <span class="text-xs font-bold text-guinda-700 bg-guinda-100 px-2.5 py-0.5 rounded-full border border-guinda-200">
+                                    Ajuste rápido
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" id="height" step="0.01" min="1.20" max="2.10" value="1.62" required
+                                    class="w-full pl-3.5 pr-9 py-2 text-base font-bold text-guinda-950 bg-white border-2 border-guinda-300 rounded-2xl focus:ring-2 focus:ring-guinda-500 focus:border-guinda-600 outline-none transition shadow-sm"
+                                    oninput="syncHeightFromInput()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-bold text-guinda-500">m</span>
+                            </div>
+                            <input type="range" id="heightSlider" min="1.20" max="2.10" step="0.01" value="1.62" 
+                                class="kawaii-slider cursor-pointer" 
+                                oninput="syncHeightFromSlider()">
+                            <div class="flex justify-between text-[10px] text-slate-400 font-semibold px-1">
+                                <span>1.20 m</span>
+                                <span>1.65 m</span>
+                                <span>2.10 m</span>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="px-6 py-3 bg-guinda-50/80 border-t border-guinda-200 flex items-center justify-between text-xs text-guinda-800 font-medium">
+                    <span class="flex items-center gap-1.5"><i class="fa-solid fa-calculator text-guinda-500"></i> Fórm: Peso / (Talla)²</span>
+                    <span class="font-cute font-bold text-guinda-900 flex items-center gap-1">
+                        <i class="fa-solid fa-cat text-pink-500"></i> Control Obstétrico
+                    </span>
+                </div>
+            </div>
+
+            <!-- RESULTADO DE DIAGNÓSTICO (7 cols) -->
+            <div class="md:col-span-7 kawaii-card flex flex-col justify-between overflow-hidden">
+                <div class="cat-ear-left"></div>
+                <div class="cat-ear-right"></div>
+
+                <div class="kawaii-card-header flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-heart-pulse text-amber-300 text-lg"></i>
+                        <span class="font-mochi text-sm tracking-wide text-amber-100 uppercase">Diagnóstico Prenatal</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-guinda-900 bg-amber-100 px-3 py-0.5 rounded-full border border-amber-300">
+                        <i class="fa-solid fa-stethoscope text-guinda-700"></i> Evaluación Activa
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-6 flex-grow flex flex-col justify-between">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-center gap-6">
+                        <!-- IMC Calculado -->
+                        <div class="bg-gradient-to-br from-guinda-50 to-white px-7 py-5 rounded-3xl border-2 border-guinda-300 text-center shadow-sm relative min-w-[150px]">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-guinda-700 text-white font-mochi text-[9px] px-3 py-0.5 rounded-full uppercase border border-amber-200">
+                                IMC CALCULADO
+                            </div>
+                            <div class="flex items-baseline justify-center gap-1 pt-1">
+                                <span class="text-5xl font-mochi font-black text-guinda-950" id="imcValue">0.0</span>
+                                <span class="text-xs text-slate-500 font-bold">kg/m²</span>
+                            </div>
+                        </div>
+
+                        <div class="text-center sm:text-left flex-grow">
+                            <span class="text-xs font-cute font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                                Clasificación Nutricional Gestacional:
+                            </span>
+                            <div id="categoryBadge" class="inline-block px-6 py-2.5 rounded-full text-lg font-mochi bg-slate-100 text-slate-600 border-2 border-slate-300 shadow-sm">
+                                Esperando datos...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recomendación Obstétrica -->
+                    <div class="p-5 rounded-2xl bg-gradient-to-r from-guinda-50 via-pink-50/50 to-guinda-50 border-2 border-guinda-200 text-sm text-guinda-950 space-y-2 shadow-inner">
+                        <p class="font-mochi text-guinda-900 flex items-center gap-2 text-base">
+                            <i class="fa-solid fa-shield-cat text-guinda-700 text-lg"></i> Pauta de Ganancia de Peso Gestacional:
+                        </p>
+                        <p id="weightGainText" class="text-slate-700 leading-relaxed font-medium">
+                            Ingrese o ajuste el peso y la talla para generar la indicación médica recomendada según la OMS / ACOG.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="px-6 py-3 bg-guinda-50/80 border-t border-guinda-200 flex items-center justify-between text-xs text-slate-500 font-bold">
+                    <span><i class="fa-solid fa-circle-check text-emerald-500"></i> Monitoreo Continuo</span>
+                    <span><i class="fa-solid fa-heart text-rose-500"></i> Cuidado Materno-Fetal</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECCIÓN: ESPECTRO INTERACTIVO DE IMC -->
+        <div class="kawaii-card overflow-hidden">
+            <div class="cat-ear-left"></div>
+            <div class="cat-ear-right"></div>
+
+            <div class="kawaii-card-header flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-amber-300 text-lg"></i>
+                    <span class="font-mochi text-sm tracking-wide text-amber-100 uppercase">Espectro Interactivo de IMC Obstétrico 🐾</span>
+                </div>
+                <div class="bg-guinda-900/80 text-amber-200 text-xs font-cute font-bold px-3 py-1 rounded-full border border-amber-300/40">
+                    <i class="fa-solid fa-cat text-amber-300"></i> Indicador Dinámico
+                </div>
+            </div>
+
+            <div class="p-6 sm:p-8 space-y-6">
+                <!-- BARRA DE ESTADO -->
+                <div class="pt-10 pb-6 px-4 relative">
+                    
+                    <!-- Marcador Flotante (Gatito pin) -->
+                    <div id="catPin" class="gauge-marker absolute -top-2 left-[0%] -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none transition-all">
+                        <div class="bg-guinda-900 text-white font-mochi text-xs px-3 py-1 rounded-full border-2 border-amber-300 shadow-md whitespace-nowrap mb-1">
+                            <span id="pinValue">0.0</span> kg/m²
+                        </div>
+                        <div class="text-3xl text-guinda-800 drop-shadow-md animate-bounce">
+                            <i class="fa-solid fa-cat"></i>
+                        </div>
+                        <div class="w-2 h-2 bg-guinda-950 rounded-full"></div>
+                    </div>
+
+                    <!-- Barra Multisegmentada -->
+                    <div class="w-full h-8 rounded-full overflow-hidden flex border-2 border-guinda-900 shadow-inner relative z-10">
+                        <div id="seg-bajo" class="h-full bg-amber-300 flex items-center justify-center text-[11px] font-bold text-amber-950 transition-all" style="width: 18.5%;" title="Bajo peso (<18.5)">
+                            <span class="hidden sm:inline">Bajo peso</span>
+                        </div>
+                        <div id="seg-normal" class="h-full bg-emerald-400 flex items-center justify-center text-[11px] font-bold text-emerald-950 transition-all" style="width: 20%;" title="Peso normal (18.5 - 24.9)">
+                            <span class="hidden sm:inline">Normal</span>
+                        </div>
+                        <div id="seg-sobrepeso" class="h-full bg-orange-300 flex items-center justify-center text-[11px] font-bold text-orange-950 transition-all" style="width: 18%;" title="Sobrepeso (25 - 29.9)">
+                            <span class="hidden sm:inline">Sobrepeso</span>
+                        </div>
+                        <div id="seg-ob1" class="h-full bg-rose-400 flex items-center justify-center text-[11px] font-bold text-rose-950 transition-all" style="width: 15%;" title="Obesidad I (30 - 34.9)">
+                            <span class="hidden sm:inline">Ob. I</span>
+                        </div>
+                        <div id="seg-ob2" class="h-full bg-red-500 flex items-center justify-center text-[11px] font-bold text-white transition-all" style="width: 14%;" title="Obesidad II (35 - 39.9)">
+                            <span class="hidden sm:inline">Ob. II</span>
+                        </div>
+                        <div id="seg-ob3" class="h-full bg-red-800 flex items-center justify-center text-[11px] font-bold text-white transition-all" style="width: 14.5%;" title="Obesidad III (≥40)">
+                            <span class="hidden sm:inline">Ob. III</span>
+                        </div>
+                    </div>
+
+                    <!-- Leyendas -->
+                    <div class="flex justify-between text-[11px] font-bold text-slate-500 mt-2 px-1">
+                        <span>15.0</span>
+                        <span>18.5</span>
+                        <span>25.0</span>
+                        <span>30.0</span>
+                        <span>35.0</span>
+                        <span>40.0</span>
+                        <span>45.0+</span>
+                    </div>
+
+                </div>
+
+                <!-- TARJETAS DE RANGOS -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
+                    <div id="card-bajo" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-amber-800 uppercase block">Bajo Peso</span>
+                        <span class="text-xs text-amber-900 font-black block mt-0.5">&lt; 18.5</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>12.5 - 18kg</span>
+                    </div>
+
+                    <div id="card-normal" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-emerald-800 uppercase block">Normopeso</span>
+                        <span class="text-xs text-emerald-900 font-black block mt-0.5">18.5 - 24.9</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>11.5 - 16kg</span>
+                    </div>
+
+                    <div id="card-sobrepeso" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-orange-800 uppercase block">Sobrepeso</span>
+                        <span class="text-xs text-orange-900 font-black block mt-0.5">25.0 - 29.9</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>7 - 11.5kg</span>
+                    </div>
+
+                    <div id="card-ob1" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-rose-800 uppercase block">Obesidad I</span>
+                        <span class="text-xs text-rose-900 font-black block mt-0.5">30.0 - 34.9</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>5 - 9kg</span>
+                    </div>
+
+                    <div id="card-ob2" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-red-800 uppercase block">Obesidad II</span>
+                        <span class="text-xs text-red-900 font-black block mt-0.5">35.0 - 39.9</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>5 - 9kg</span>
+                    </div>
+
+                    <div id="card-ob3" class="mini-category-card text-center p-3">
+                        <span class="text-[11px] font-bold text-red-950 uppercase block">Obesidad III</span>
+                        <span class="text-xs text-red-950 font-black block mt-0.5">≥ 40.0</span>
+                        <span class="text-[10px] text-slate-500 block mt-1">Ganancia:<br>máx 5kg</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="bg-guinda-950 text-white border-t-8 border-guinda-600 py-6 mt-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-center md:text-left gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="text-3xl text-kawaiiPink animate-bounce">
+                    <i class="fa-solid fa-cat"></i>
+                </div>
+                <div>
+                    <p class="font-mochi text-sm sm:text-base text-amber-200">Calculadora Obstétrica Online</p>
+                    <p class="text-xs text-guinda-300 font-medium">Evaluación clínica prenatal con temática Kawaii</p>
+                </div>
+            </div>
+
+            <div class="text-xs text-guinda-300 font-cute flex items-center gap-2">
+                <span>Cuidado maternal con ternura</span> <i class="fa-solid fa-heart text-pink-400"></i>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Sincronizar Peso (Input <-> Slider)
+        function syncWeightFromSlider() {
+            const sliderVal = document.getElementById('weightSlider').value;
+            document.getElementById('weight').value = sliderVal;
+            calculateIMC();
+        }
+
+        function syncWeightFromInput() {
+            const inputVal = document.getElementById('weight').value;
+            if (inputVal >= 30 && inputVal <= 180) {
+                document.getElementById('weightSlider').value = inputVal;
+            }
+            calculateIMC();
+        }
+
+        // Sincronizar Talla (Input <-> Slider)
+        function syncHeightFromSlider() {
+            const sliderVal = document.getElementById('heightSlider').value;
+            document.getElementById('height').value = sliderVal;
+            calculateIMC();
+        }
+
+        function syncHeightFromInput() {
+            let inputVal = parseFloat(document.getElementById('height').value);
+            // Si el usuario ingresa en cm (ej. 162), convertir a m (1.62)
+            if (inputVal > 3) {
+                inputVal = inputVal / 100;
+            }
+            if (inputVal >= 1.20 && inputVal <= 2.10) {
+                document.getElementById('heightSlider').value = inputVal;
+            }
+            calculateIMC();
+        }
+
+        function calculateIMC() {
+            const weightInput = parseFloat(document.getElementById('weight').value);
+            let heightInput = parseFloat(document.getElementById('height').value);
+
+            if (!weightInput || !heightInput || weightInput <= 0 || heightInput <= 0) {
+                resetCalculator();
+                return;
+            }
+
+            // Normalizar talla si ingresa en cm
+            if (heightInput > 3) {
+                heightInput = heightInput / 100;
+            }
+
+            const imc = weightInput / (heightInput * heightInput);
+            const formattedIMC = imc.toFixed(1);
+
+            document.getElementById('imcValue').innerText = formattedIMC;
+            document.getElementById('pinValue').innerText = formattedIMC;
+
+            let category = "";
+            let badgeStyle = "";
+            let weightGainAdvice = "";
+            let activeCardId = "";
+
+            // Lógica de clasificación nutricional obstétrica
+            if (imc < 18.5) {
+                category = "Bajo peso";
+                badgeStyle = "bg-amber-100 text-amber-900 border-amber-400";
+                weightGainAdvice = "Ganancia de peso esperada para gestación única: 12.5 kg a 18.0 kg. Se recomienda asesoría nutricional para asegurar un óptimo desarrollo fetal.";
+                activeCardId = "card-bajo";
+            } else if (imc < 25.0) {
+                category = "Peso normal";
+                badgeStyle = "bg-emerald-100 text-emerald-900 border-emerald-400";
+                weightGainAdvice = "Ganancia de peso esperada para gestación única: 11.5 kg a 16.0 kg. Se aconseja mantener un régimen nutricional equilibrado y suplementación oportuna.";
+                activeCardId = "card-normal";
+            } else if (imc < 30.0) {
+                category = "Sobrepeso";
+                badgeStyle = "bg-orange-100 text-orange-900 border-orange-400";
+                weightGainAdvice = "Ganancia de peso esperada para gestación única: 7.0 kg a 11.5 kg. Acompañar con actividad física moderada permitida y control metabólico.";
+                activeCardId = "card-sobrepeso";
+            } else if (imc < 35.0) {
+                category = "Obesidad Tipo 1";
+                badgeStyle = "bg-rose-100 text-rose-900 border-rose-400";
+                weightGainAdvice = "Ganancia de peso recomendada: 5.0 kg a 9.0 kg. Vigilancia periódica de presión arterial y controles ecográficos oportunos.";
+                activeCardId = "card-ob1";
+            } else if (imc < 40.0) {
+                category = "Obesidad Tipo 2";
+                badgeStyle = "bg-red-100 text-red-950 border-red-400";
+                weightGainAdvice = "Ganancia de peso estricta: 5.0 kg a 9.0 kg máximo. Control continuo de alto riesgo obstétrico y despistaje de preeclampsia.";
+                activeCardId = "card-ob2";
+            } else {
+                category = "Obesidad Tipo 3";
+                badgeStyle = "bg-red-900 text-white border-red-950";
+                weightGainAdvice = "Ganancia de peso minuciosamente controlada (máximo 5.0 kg). Manejo de gestación de alto riesgo con equipo multidisciplinario.";
+                activeCardId = "card-ob3";
+            }
+
+            // Actualizar etiqueta del badge
+            const badgeElem = document.getElementById('categoryBadge');
+            badgeElem.className = `inline-block px-6 py-2.5 rounded-full text-lg font-mochi border-2 shadow-sm transition-all ${badgeStyle}`;
+            badgeElem.innerText = category;
+
+            // Actualizar texto de pauta
+            document.getElementById('weightGainText').innerText = weightGainAdvice;
+
+            // Calcular posición porcentual del marcador (entre IMC 15 y 45)
+            const minIMC = 15;
+            const maxIMC = 45;
+            let clampedIMC = Math.max(minIMC, Math.min(maxIMC, imc));
+            let percentage = ((clampedIMC - minIMC) / (maxIMC - minIMC)) * 100;
+            
+            document.getElementById('catPin').style.left = `${percentage}%`;
+
+            // Resaltar la tarjeta del rango correspondiente
+            highlightCategoryCard(activeCardId);
+        }
+
+        function highlightCategoryCard(cardId) {
+            const cards = ['card-bajo', 'card-normal', 'card-sobrepeso', 'card-ob1', 'card-ob2', 'card-ob3'];
+            cards.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (id === cardId) {
+                        el.classList.add('ring-4', 'ring-guinda-600', 'scale-105', 'shadow-lg', 'border-guinda-500');
+                    } else {
+                        el.classList.remove('ring-4', 'ring-guinda-600', 'scale-105', 'shadow-lg', 'border-guinda-500');
+                    }
+                }
+            });
+        }
+
+        function resetCalculator() {
+            document.getElementById('imcValue').innerText = "0.0";
+            document.getElementById('pinValue').innerText = "0.0";
+            
+            const badgeElem = document.getElementById('categoryBadge');
+            badgeElem.className = "inline-block px-6 py-2.5 rounded-full text-lg font-mochi bg-slate-100 text-slate-600 border-2 border-slate-300 shadow-sm";
+            badgeElem.innerText = "Esperando datos...";
+            
+            document.getElementById('weightGainText').innerText = "Ingrese o ajuste el peso y la talla para obtener el diagnóstico exacto y las pautas obstétricas según el rango.";
+            document.getElementById('catPin').style.left = "0%";
+
+            highlightCategoryCard("");
+        }
+
+        /* Funciones de Exportación */
+        function downloadPDF() {
+            const element = document.getElementById('reportArea');
+            const patientName = document.getElementById('patientName').value || 'Paciente';
+            
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `Reporte_Obstetrico_${patientName.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function downloadPNG() {
+            const element = document.getElementById('reportArea');
+            const patientName = document.getElementById('patientName').value || 'Paciente';
+
+            html2canvas(element, { scale: 2, backgroundColor: '#fdf2f4' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Reporte_Obstetrico_${patientName.replace(/\s+/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        window.onload = function() {
+            calculateIMC();
+        };
+    </script>
+</body>
+</html>
